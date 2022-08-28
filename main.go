@@ -48,6 +48,7 @@ func main() {
 
 }
 
+//Методы которы берет документ с сайта
 func getDocFromWebSite(url string) (string, error) {
 	res, err := http.Get(url)
 	if err != nil {
@@ -57,6 +58,7 @@ func getDocFromWebSite(url string) (string, error) {
 	return string(body), err
 }
 
+// Метод который парсит документ
 func parseDocument(str string) ([]req.Hotel, error) {
 
 	doc, err := html.Parse(strings.NewReader(str))

@@ -16,10 +16,10 @@ import (
 
 // Конcтанты классов в которых находится информация о отелях
 const (
-	nameClassUrl = "Link Link_theme_normal Link_view_default STEEy Y_QIb Link_lego KlhYG" //класс отвечаюзий за название отеля
-	nameClass    = "d2q3W"
-	priceClass   = "Akpkj"
-	ratingClass  = "FlrxR u8BKo kWZoP LyIFS"
+	NAMEURL_CLASS = "Link Link_theme_normal Link_view_default STEEy Y_QIb Link_lego KlhYG" //класс отвечаюзий за название отеля
+	NAME_CLASS    = "d2q3W"
+	PRICE_CLASS   = "Akpkj"
+	RATING_CLASS  = "FlrxR u8BKo kWZoP LyIFS"
 )
 
 func main() {
@@ -48,7 +48,7 @@ func main() {
 
 }
 
-//Методы которы берет документ с сайта
+//Функция которая берет документ с сайта
 func getDocFromWebSite(url string) (string, error) {
 	res, err := http.Get(url)
 	if err != nil {
@@ -58,7 +58,7 @@ func getDocFromWebSite(url string) (string, error) {
 	return string(body), err
 }
 
-// Метод который парсит документ
+// Функция которая парсит документ
 func parseDocument(str string) ([]req.Hotel, error) {
 
 	doc, err := html.Parse(strings.NewReader(str))
@@ -73,7 +73,7 @@ func parseDocument(str string) ([]req.Hotel, error) {
 	foo = func(n *html.Node, arr *[]req.Hotel) {
 		if n.Type == html.ElementNode && n.Data == "a" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == nameClassUrl {
+				if a.Key == "class" && a.Val == NAMEURL_CLASS {
 					h.Name = n.FirstChild.Data
 					break
 				}
@@ -81,7 +81,7 @@ func parseDocument(str string) ([]req.Hotel, error) {
 		}
 		if n.Type == html.ElementNode && n.Data == "div" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == ratingClass {
+				if a.Key == "class" && a.Val == RATING_CLASS {
 					rating, err := strconv.ParseFloat(
 						strings.ReplaceAll(n.FirstChild.Data, ",", "."), 32)
 					if err != nil {
@@ -95,7 +95,7 @@ func parseDocument(str string) ([]req.Hotel, error) {
 		}
 		if n.Type == html.ElementNode && n.Data == "span" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == priceClass {
+				if a.Key == "class" && a.Val == PRICE_CLASS {
 					// Перепробовал все способы строка не тримится и не сплитится пришлось делать черещ костыль (с тем символом тоде все перепробывал)
 					f := strings.TrimSuffix(n.FirstChild.Data, "₽")
 					f = strings.TrimSpace(f)
@@ -114,7 +114,7 @@ func parseDocument(str string) ([]req.Hotel, error) {
 					*arr = append(*arr, h)
 					break
 				}
-				if a.Key == "class" && a.Val == nameClass {
+				if a.Key == "class" && a.Val == NAME_CLASS {
 					h.Name = h.Name + " " + n.FirstChild.Data
 					break
 				}

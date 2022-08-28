@@ -29,7 +29,11 @@ func main() {
 	if *goroutineCount < 1 {
 		*goroutineCount = 1
 	}
-	str, _ := getDocFromWebSite(*url)
+	str, err := getDocFromWebSite(*url)
+
+	if err != nil {
+		return
+	}
 
 	arr, err := parseDocument(str)
 	if err != nil {

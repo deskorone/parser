@@ -32,6 +32,7 @@ func main() {
 	str, err := getDocFromWebSite(*url)
 
 	if err != nil {
+		println(err.Error())
 		return
 	}
 
@@ -143,7 +144,7 @@ func removeByIndex(arr []req.Hotel, i int) []req.Hotel {
 	return arr
 }
 
-//Функция делающая сичло из массива чисел
+//Функция делающая число из массива чисел
 func toInt(arr []int) int {
 	res := 0
 	op := 1

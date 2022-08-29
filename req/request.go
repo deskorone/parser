@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type Hotel struct {
@@ -17,8 +18,8 @@ type Hotel struct {
 }
 
 // Функция которая распределает запросы по горрутинам
+
 func DoRequest(count int, arr []Hotel) error {
-	lenght := len(arr)
 	ch := make(chan Hotel)
 	closeChan := make(chan int)
 
@@ -44,13 +45,11 @@ func DoRequest(count int, arr []Hotel) error {
 		wg.Add(1)
 		go gorutine()
 	}
-	for i, h := range arr {
+	for _, h := range arr {
 		ch <- h
-		if i == lenght-1 {
-			for j := 0; j < count; j++ {
-				closeChan <- 0
-			}
-		}
+	}
+	for j := 0; j < count; j++ {
+		closeChan <- 0
 	}
 	wg.Wait()
 	return nil
@@ -74,6 +73,7 @@ func makeReq(h Hotel) error {
 	}
 	sb := string(body)
 	log.Printf(sb)
+	time.Sleep(1 * time.Second)
 	err = resp.Body.Close()
 
 	return err

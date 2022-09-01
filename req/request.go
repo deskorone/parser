@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"time"
 )
 
 type Hotel struct {
@@ -17,16 +16,18 @@ type Hotel struct {
 	Rating float32 `json:"rating"`
 }
 
-// Функция которая распределает запросы по горрутинам
-
+// DoRequest Функция которая распределает запросы по горрутинам
 func DoRequest(count int, arr []Hotel) error {
 	ch := make(chan Hotel)
+	// Канал для уведомления горутин о завершени работы
 	closeChan := make(chan int)
 
 	defer close(ch)
 	defer close(closeChan)
 
 	var wg sync.WaitGroup
+	// Функция которая при создании слушает ранее созданные каналы ch closeChan
+	// Можно сделать отдельной функцией, но тогда нужно передавать ссылку на waitgroup и канал
 	gorutine := func() {
 		defer wg.Done()
 		for {
@@ -56,11 +57,12 @@ func DoRequest(count int, arr []Hotel) error {
 }
 
 // Функция которая делает запрос на сервер
-func makeReq(h Hotel) error {
-	body, err := json.Marshal(h)
+func makeReq(hotel Hotel) error {
+	body, err := json.Marshal(hotel)
 	if err != nil {
 		return err
 	}
+
 	rbody := bytes.NewBuffer(body)
 
 	resp, err := http.Post("http://localhost:8080/save", "application/json", rbody)
@@ -68,12 +70,12 @@ func makeReq(h Hotel) error {
 		return err
 	}
 	body, err = ioutil.ReadAll(resp.Body)
+
 	if err != nil {
 		log.Fatalln(err)
 	}
-	sb := string(body)
-	log.Printf(sb)
-	time.Sleep(1 * time.Second)
+	stringBody := string(body)
+	log.Printf(stringBody)
 	err = resp.Body.Close()
 
 	return err

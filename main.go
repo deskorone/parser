@@ -27,22 +27,23 @@ func main() {
 	goroutineCount := flag.Int("r", 1, "hotels url")
 	flag.Parse()
 	if *goroutineCount < 1 {
-		*goroutineCount = 1
+		fmt.Println("Вы ввели некоректное колличество горутин (")
+		return
 	}
-	str, err := getDocFromWebSite(*url)
+	docFromWebSite, err := getDocFromWebSite(*url)
 
 	if err != nil {
-		println(err.Error())
+		fmt.Println("Прооизощла ошибка при получении документа, проверьте свое соединение!")
 		return
 	}
 
-	arr, err := parseDocument(str)
+	hotels, err := parseDocument(docFromWebSite)
 	if err != nil {
 		fmt.Printf("err: %v\n", err.Error())
 		return
 	}
 
-	err = req.DoRequest(*goroutineCount, arr)
+	err = req.DoRequest(*goroutineCount, hotels)
 	if err != nil {
 		return
 	}
@@ -51,11 +52,11 @@ func main() {
 
 //Функция которая берет документ с сайта
 func getDocFromWebSite(url string) (string, error) {
-	res, err := http.Get(url)
+	result, err := http.Get(url)
 	if err != nil {
 		return "", err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(result.Body)
 	return string(body), err
 }
 
@@ -68,14 +69,17 @@ func parseDocument(str string) ([]req.Hotel, error) {
 		return nil, err
 	}
 
-	var foo func(n *html.Node, arr *[]req.Hotel)
-	var h req.Hotel
+	var hotel req.Hotel
 
-	foo = func(n *html.Node, arr *[]req.Hotel) {
+	// объявляю здесь иначе функция не будет работать рекурсивно
+	var parseFunction func(n *html.Node, hotels *[]req.Hotel)
+
+	// Функция которая парсит документ
+	parseFunction = func(n *html.Node, hotels *[]req.Hotel) {
 		if n.Type == html.ElementNode && n.Data == "a" {
 			for _, a := range n.Attr {
 				if a.Key == "class" && a.Val == NAMEURL_CLASS {
-					h.Name = n.FirstChild.Data
+					hotel.Name = n.FirstChild.Data
 					break
 				}
 			}
@@ -86,10 +90,10 @@ func parseDocument(str string) ([]req.Hotel, error) {
 					rating, err := strconv.ParseFloat(
 						strings.ReplaceAll(n.FirstChild.Data, ",", "."), 32)
 					if err != nil {
-						h.Rating = 0
+						hotel.Rating = 0
 						break
 					}
-					h.Rating = float32(rating)
+					hotel.Rating = float32(rating)
 					break
 				}
 			}
@@ -98,41 +102,40 @@ func parseDocument(str string) ([]req.Hotel, error) {
 			for _, a := range n.Attr {
 				if a.Key == "class" && a.Val == PRICE_CLASS {
 					// Перепробовал все способы строка не тримится и не сплитится пришлось делать черещ костыль (с тем символом тоде все перепробывал)
-					f := strings.TrimSuffix(n.FirstChild.Data, "₽")
-					f = strings.TrimSpace(f)
-					array := make([]int, 0)
-					for _, i := range f {
+					word := strings.TrimSuffix(n.FirstChild.Data, "₽")
+					word = strings.TrimSpace(word)
+					numArray := make([]int, 0)
+					for _, i := range word {
 						n, err := strconv.Atoi(string(i))
 						if err != nil {
 							continue
 						}
-						array = append(array, n)
+						numArray = append(numArray, n)
 					}
-
-					num := toInt(array)
-
-					h.Price = num
-					*arr = append(*arr, h)
+					num := toInt(numArray)
+					hotel.Price = num
+					// Добавляю отель здесь потому что этот класс парсится последним
+					*hotels = append(*hotels, hotel)
 					break
 				}
 				if a.Key == "class" && a.Val == NAME_CLASS {
-					h.Name = h.Name + " " + n.FirstChild.Data
+					hotel.Name = hotel.Name + " " + n.FirstChild.Data
 					break
 				}
 			}
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			foo(c, arr)
+			parseFunction(c, hotels)
 		}
 	}
 
-	arr := make([]req.Hotel, 0)
+	hotels := make([]req.Hotel, 0)
 
-	foo(doc, &arr)
+	parseFunction(doc, &hotels)
 
 	// убираю первый элемент потому что он в нем нет информации об отеле
-	arr = removeByIndex(arr, 0)
-	return arr, err
+	hotels = removeByIndex(hotels, 0)
+	return hotels, err
 }
 
 //Функция удаляющая элемент по индексу из массива

@@ -2,12 +2,14 @@ package req
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type Hotel struct {
@@ -19,15 +21,12 @@ type Hotel struct {
 // DoRequest Функция которая распределает запросы по горрутинам
 func DoRequest(count int, arr []Hotel) error {
 	ch := make(chan Hotel)
-	// Канал для уведомления горутин о завершени работы
-	closeChan := make(chan int)
 
-	defer close(ch)
-	defer close(closeChan)
+	// Контекст для завершения горутин
+	ctx, cancel := context.WithCancel(context.Background())
 
 	var wg sync.WaitGroup
 	// Функция которая при создании слушает ранее созданные каналы ch closeChan
-	// Можно сделать отдельной функцией, но тогда нужно передавать ссылку на waitgroup и канал
 	gorutine := func() {
 		defer wg.Done()
 		for {
@@ -37,7 +36,7 @@ func DoRequest(count int, arr []Hotel) error {
 				if e != nil {
 					fmt.Println(e.Error())
 				}
-			case <-closeChan:
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -49,9 +48,7 @@ func DoRequest(count int, arr []Hotel) error {
 	for _, h := range arr {
 		ch <- h
 	}
-	for j := 0; j < count; j++ {
-		closeChan <- 0
-	}
+	cancel()
 	wg.Wait()
 	return nil
 }
@@ -63,6 +60,7 @@ func makeReq(hotel Hotel) error {
 		return err
 	}
 
+	time.Sleep(700 * time.Millisecond)
 	rbody := bytes.NewBuffer(body)
 
 	resp, err := http.Post("http://localhost:8080/save", "application/json", rbody)
